@@ -186,6 +186,7 @@ document.querySelector('.reverseBtn').addEventListener('click', () => {
  * mutli target
  * multi animation
  * BezierEasing as dependency
+ * speed control
  * documentation
  * use animation api if supported
  */
