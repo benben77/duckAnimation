@@ -12,6 +12,10 @@
       height: 200px;
       border: 1px solid #eee;
     }
+    .container.container--2 {
+      top: 400px;
+      height: 100px;
+    }
     .box {
       position: absolute;
       left: 0;
@@ -19,8 +23,12 @@
       width: 100px;
       height: 100px;
       background: #ee3366;
+      color: #fff;
+      font-size: 20px;
+      line-height: 100px;
+      text-align: center;
     }
-    .box:nth-child(1) {
+    .box:nth-child(2) {
       top: 100px;
     }
     .controls {
@@ -31,9 +39,9 @@
       display: flex;
     }
   </style>
-  <div class="container">
-    <div class="box"></div>
-    <div class="box"></div>
+  <div class="container container--1">
+    <div class="box">1</div>
+    <div class="box">2</div>
     <div class="controls">
       <div>
         <div class="value"></div>
@@ -46,14 +54,19 @@
       </div>
     </div>
   </div>
+  <div class="container container--2">
+    <div class="box">3</div>
+  </div>
   <script src="./bezier.js"></script>
   <script src="./ani.js"></script>
   <script>
     const $value = document.querySelector('.value');
     const $time = document.querySelector('.time');
 
+    const animationGroup = new AnimationGroup();
+
     const ani = animate(
-      document.querySelectorAll('.box'),
+      document.querySelectorAll('.container--1 > .box'),
       {
         left: [0, 1000],
         backgroundColor: ['ee3366', '99ee33'],
@@ -65,23 +78,37 @@
           $value.innerText = ratio.toFixed(2)
           $time.innerText = timeRatio.toFixed(2)
         },
-      }
+        animationGroup,
+      },
+    );
+
+    const ani2 = animate(
+      document.querySelectorAll('.container--2 > .box'),
+      {
+        left: [0, 1000],
+        rotate: [0, 360],
+      },
+      {
+        easing: Easings.linear,
+        duration: 6000,
+        animationGroup,
+      },
     );
 
     document.querySelector('.playBtn').addEventListener('click', () => {
       if (ani.isPlaying) {
-        ani.pause();
+        animationGroup.pause();
       } else {
-        ani.play();
+        animationGroup.play();
       }
     });
 
     document.querySelector('.stopBtn').addEventListener('click', () => {
-      ani.reset(1000);
+      animationGroup.reset(1000);
     });
 
     document.querySelector('.reverseBtn').addEventListener('click', () => {
-      ani.reverse();
+      animationGroup.reverse();
     });
   </script>
 </body>

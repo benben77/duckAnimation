@@ -37,6 +37,10 @@ const handlerMap = {
   left: function($elms, [from, to], ratio) {
     $elms.style.left = `${from + (to - from) * ratio}px`;
   },
+  rotate: function($elms, [from, to], ratio) {
+    // TODO: 不要影响其他transform属性
+    $elms.style.transform = `rotate(${from + (to - from) * ratio}deg)`;
+  },
   backgroundColor: function($elms, [from, to], ratio) {
     const fr = parseInt(from.substr(0, 2), 16);
     const fg = parseInt(from.substr(2, 2), 16);
@@ -54,7 +58,7 @@ const handlerMap = {
 };
 
 class Animation {
-  constructor($elms, obj, { duration, cb, easing = Easings.linear }) {
+  constructor($elms, obj, { duration, cb, easing = Easings.linear, animationGroup }) {
     if ($elms instanceof NodeList || $elms instanceof Array) {
       $elms = slice.call($elms);
     } else {
@@ -70,6 +74,7 @@ class Animation {
     this.passedTime = 0;
     this.aniId = 0;
     this.isReversed = false;
+    if (animationGroup) animationGroup.add(this);
   }
 
   play() {
@@ -100,6 +105,10 @@ class Animation {
     const { isPlaying } = this;
     this.pause();
     if (isPlaying) this.play();
+  }
+
+  destroy() {
+    // TODO
   }
 
   _step() {
@@ -138,9 +147,27 @@ const animate = function($elms, obj, opts) {
 };
 
 window.animate = animate;
+
+class AnimationGroup {
+  constructor() {
+    this.aniList = [];
+  }
+  add(animation) {
+    this.aniList.push(animation);
+  }
+  destroy() {
+    this.aniList.forEach(x => x.destroy());
+    this.aniList.length = 0;
+  }
+}
+['play', 'pause', 'reset', 'reverse'].forEach(method => {
+  AnimationGroup.prototype[method] = function(...params) {
+    this.aniList.forEach(x => x[method](...params));
+  };
+});
+
 /**
  * TODO
- * 动画组
  * 单一定时器
  * handler实例化
  * 多段动画
