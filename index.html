@@ -7,13 +7,17 @@
     .container {
       position: absolute;
       left: 100px;
-      top: 100px;
+      top: 50px;
       width: 1100px;
       height: 200px;
       border: 1px solid #eee;
     }
     .container.container--2 {
-      top: 400px;
+      top: 350px;
+      height: 100px;
+    }
+    .container.container--3 {
+      top: 500px;
       height: 100px;
     }
     .box {
@@ -57,6 +61,9 @@
   <div class="container container--2">
     <div class="box">3</div>
   </div>
+  <div class="container container--3">
+    <div class="box">4</div>
+  </div>
   <script src="./bezier.js"></script>
   <script src="./ani.js"></script>
   <script>
@@ -91,6 +98,19 @@
       {
         easing: Easings.linear,
         duration: 6000,
+        animationGroup,
+      },
+    );
+
+    const ani3 = animate(
+      document.querySelectorAll('.container--3 > .box'),
+      {
+        left: [0, 1000],
+        rotate: [0, 360],
+      },
+      {
+        easing: Easings.linear,
+        duration: 4000,
         animationGroup,
       },
     );

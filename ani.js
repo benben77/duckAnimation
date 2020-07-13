@@ -1,6 +1,26 @@
 const { slice } = [];
 const { BezierEasing } = window;
 
+let animationId = 0;
+let animationList = new Set();
+const startAnimation = function(animate) {
+  if (!animationId) animationId = requestAnimationFrame(updateAnimations);
+  animationList.add(animate);
+};
+const stopAnimation = function(animate) {
+  animationList.delete(animate);
+  if (animationList.size === 0) {
+    cancelAnimationFrame(animationId);
+    animationId = 0;
+  }
+};
+const updateAnimations = function() {
+  animationList.forEach(animate => {
+    animate._step();
+  });
+  animationId = requestAnimationFrame(updateAnimations);
+};
+
 const Easings = {
   linear(x) {
     return x;
@@ -33,28 +53,51 @@ const Easings = {
   },
 };
 
-const handlerMap = {
-  left: function($elms, [from, to], ratio) {
-    $elms.style.left = `${from + (to - from) * ratio}px`;
-  },
-  rotate: function($elms, [from, to], ratio) {
+class Handler {
+  constructor($elms, [from, to]) {
+    this.$elms = $elms;
+    this.from = from;
+    this.to = to;
+  }
+}
+class HanlderLeft extends Handler {
+  render(ratio) {
+    const { from, to } = this;
+    this.$elms.forEach($el => $el.style.left = `${from + (to - from) * ratio}px`);
+  }
+}
+class HanlderRotate extends Handler {
+  render(ratio) {
+    const { from, to } = this;
     // TODO: 不要影响其他transform属性
-    $elms.style.transform = `rotate(${from + (to - from) * ratio}deg)`;
-  },
-  backgroundColor: function($elms, [from, to], ratio) {
-    const fr = parseInt(from.substr(0, 2), 16);
-    const fg = parseInt(from.substr(2, 2), 16);
-    const fb = parseInt(from.substr(4, 2), 16);
-    const tr = parseInt(to.substr(0, 2), 16);
-    const tg = parseInt(to.substr(2, 2), 16);
-    const tb = parseInt(to.substr(4, 2), 16);
+    this.$elms.forEach($el => $el.style.transform = `rotate(${from + (to - from) * ratio}deg)`);
+  }
+}
+class HanlderBackGround extends Handler {
+  constructor($elms, [from, to]) {
+    super($elms, [from, to]);
+    this.fr = parseInt(from.substr(0, 2), 16);
+    this.fg = parseInt(from.substr(2, 2), 16);
+    this.fb = parseInt(from.substr(4, 2), 16);
+    this.tr = parseInt(to.substr(0, 2), 16);
+    this.tg = parseInt(to.substr(2, 2), 16);
+    this.tb = parseInt(to.substr(4, 2), 16);
+  }
+  render(ratio) {
+    const { fr, fg, fb, tr, tg, tb } = this;
     const color = [
       Math.floor((fr + (tr - fr) * ratio)).toString(16),
       Math.floor((fg + (tg - fg) * ratio)).toString(16),
       Math.floor((fb + (tb - fb) * ratio)).toString(16),
     ].join('');
-    $elms.style.backgroundColor = `#${color}`;
-  },
+    this.$elms.forEach($el => $el.style.backgroundColor = `#${color}`);
+  }
+}
+
+const handlerMap = {
+  left: HanlderLeft,
+  rotate: HanlderRotate,
+  background: HanlderBackGround,
 };
 
 class Animation {
@@ -64,15 +107,19 @@ class Animation {
     } else {
       $elms = [$elms];
     }
-    this.$elms = $elms;
-    this.obj = obj;
-    this.keys = Object.keys(obj);
+
+    this.handlers = Object.keys(obj).reduce((handlers, key) => {
+      const handlerCls = handlerMap[key];
+      if (handlerCls) {
+        handlers.push(new handlerCls($elms, obj[key]));
+      }
+      return handlers;
+    }, []);
     this.duration = duration;
     this.cb = cb;
     this.easing = easing;
     this.isPlaying = false;
     this.passedTime = 0;
-    this.aniId = 0;
     this.isReversed = false;
     if (animationGroup) animationGroup.add(this);
   }
@@ -81,13 +128,12 @@ class Animation {
     const { duration } = this;
     this.isPlaying = true;
     this.start = +new Date - this.passedTime;
-    this.end = this.start + duration;
-    cancelAnimationFrame(this.aniId);
-    this.aniId = requestAnimationFrame(() => this._step());
+    stopAnimation(this);
+    startAnimation(this);
   }
 
   pause() {
-    cancelAnimationFrame(this.aniId);
+    stopAnimation(this);
     this.isPlaying = false;
     return true;
   }
@@ -112,26 +158,26 @@ class Animation {
   }
 
   _step() {
-    const { duration, start, end } = this;
+    const { duration, start } = this;
     const now = +new Date;
     const passedTime = Math.min((now - start), duration);
     const timeRatio = passedTime / duration;
     this._render(timeRatio);
     this.passedTime = Math.min(passedTime, duration);
     if (this.isPlaying && timeRatio < 1) {
-      this.aniId = requestAnimationFrame(() => this._step());
+      //
     } else {
       this.isPlaying = false;
+      stopAnimation(this);
     }
   }
 
   _render(timeRatio) {
-    const { $elms, obj, keys, cb, easing, isReversed } = this;
+    const { cb, easing, isReversed } = this;
     if (isReversed) timeRatio = 1 - timeRatio;
     const ratio = easing(timeRatio);
-    keys.forEach(key => {
-      const handler = handlerMap[key];
-      if (handler) $elms.forEach($elm => handler($elm, obj[key], ratio));
+    this.handlers.forEach(handler => {
+      handler.render(ratio);
     });
     cb && cb(ratio, timeRatio);
   }
@@ -168,8 +214,6 @@ class AnimationGroup {
 
 /**
  * TODO
- * 单一定时器
- * handler实例化
  * 多段动画
  * 速度控制
  * 循环播放
