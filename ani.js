@@ -1,6 +1,4 @@
-const $box = document.querySelector('.box');
-const $value = document.querySelector('.value');
-const $time = document.querySelector('.time');
+const { slice } = [];
 const { BezierEasing } = window;
 
 const Easings = {
@@ -36,10 +34,10 @@ const Easings = {
 };
 
 const handlerMap = {
-  left: function($el, [from, to], ratio) {
-    $el.style.left = `${from + (to - from) * ratio}px`;
+  left: function($elms, [from, to], ratio) {
+    $elms.style.left = `${from + (to - from) * ratio}px`;
   },
-  backgroundColor: function($el, [from, to], ratio) {
+  backgroundColor: function($elms, [from, to], ratio) {
     const fr = parseInt(from.substr(0, 2), 16);
     const fg = parseInt(from.substr(2, 2), 16);
     const fb = parseInt(from.substr(4, 2), 16);
@@ -51,13 +49,18 @@ const handlerMap = {
       Math.floor((fg + (tg - fg) * ratio)).toString(16),
       Math.floor((fb + (tb - fb) * ratio)).toString(16),
     ].join('');
-    $el.style.backgroundColor = `#${color}`;
+    $elms.style.backgroundColor = `#${color}`;
   },
 };
 
 class Animation {
-  constructor($el, obj, { duration, cb, easing = Easings.linear }) {
-    this.$el = $el;
+  constructor($elms, obj, { duration, cb, easing = Easings.linear }) {
+    if ($elms instanceof NodeList || $elms instanceof Array) {
+      $elms = slice.call($elms);
+    } else {
+      $elms = [$elms];
+    }
+    this.$elms = $elms;
     this.obj = obj;
     this.keys = Object.keys(obj);
     this.duration = duration;
@@ -69,124 +72,80 @@ class Animation {
     this.isReversed = false;
   }
 
-  play(reset = true) {
+  play() {
     const { duration } = this;
-    if (reset) {
-      this.passedTime = 0;
-      this.isReversed = false;
-    }
     this.isPlaying = true;
     this.start = +new Date - this.passedTime;
     this.end = this.start + duration;
     cancelAnimationFrame(this.aniId);
-    this.aniId = requestAnimationFrame(() => this.step());
+    this.aniId = requestAnimationFrame(() => this._step());
   }
 
-  step() {
+  pause() {
+    cancelAnimationFrame(this.aniId);
+    this.isPlaying = false;
+    return true;
+  }
+  
+  reset(time = 0, stop = true) {
+    this.pause();
+    if (this.isReversed) this._reverseData();
+    this._render(time / this.duration);
+    this.passedTime = time;
+    if (!stop) this.play();
+  }
+
+  reverse() {
+    this._reverseData();
+    const { isPlaying } = this;
+    this.pause();
+    if (isPlaying) this.play();
+  }
+
+  _step() {
     const { duration, start, end } = this;
     const now = +new Date;
     const passedTime = Math.min((now - start), duration);
     const timeRatio = passedTime / duration;
-    this.render(timeRatio);
+    this._render(timeRatio);
     this.passedTime = Math.min(passedTime, duration);
     if (this.isPlaying && timeRatio < 1) {
-      this.aniId = requestAnimationFrame(() => this.step());
+      this.aniId = requestAnimationFrame(() => this._step());
     } else {
       this.isPlaying = false;
     }
   }
 
-  render(timeRatio) {
-    const { $el, obj, keys, cb, easing, isReversed } = this;
+  _render(timeRatio) {
+    const { $elms, obj, keys, cb, easing, isReversed } = this;
     if (isReversed) timeRatio = 1 - timeRatio;
     const ratio = easing(timeRatio);
     keys.forEach(key => {
       const handler = handlerMap[key];
-      if (handler) handler($el, obj[key], ratio);
+      if (handler) $elms.forEach($elm => handler($elm, obj[key], ratio));
     });
     cb && cb(ratio, timeRatio);
   }
 
-  pause() {
-    if (!this.isPlaying) return false;
-    if (this.isReversed) this.reverseData();
-    cancelAnimationFrame(this.aniId);
-    this.isPlaying = false;
-    return true;
-  }
-
-  resume() {
-    if (this.isPlaying) return false;
-    if (this.isReversed) this.reverseData();
-    this.play(false);
-  }
-
-  stop() {
-    this.pause();
-    cancelAnimationFrame(this.aniId);
-    this.render(0);
-  }
-
-  reverseData() {
+  _reverseData() {
     this.passedTime = this.duration - this.passedTime;
     this.isReversed = !this.isReversed;
   }
-
-  reverse() {
-    if (this.isReversed) return false;
-    this.reverseData();
-    cancelAnimationFrame(this.aniId);
-    this.play(false);
-  }
 }
 
-const animate = function($el, obj, opts) {
-  return new Animation($el, obj, opts);
+const animate = function($elms, obj, opts) {
+  return new Animation($elms, obj, opts);
 };
 
-const ani = animate(
-  $box,
-  {
-    left: [0, 1000],
-    backgroundColor: ['ee3366', '99ee33'],
-  },
-  {
-    easing: Easings.cubicBezier(0.5, 0, 0.5, 1),
-    duration: 6000,
-    cb: (ratio, timeRatio) => {
-      $value.innerText = ratio.toFixed(2)
-      $time.innerText = timeRatio.toFixed(2)
-    },
-  }
-);
-
-document.querySelector('.playBtn').addEventListener('click', () => {
-  if (ani.isPlaying) {
-    ani.pause();
-  } else {
-    ani.resume();
-  }
-});
-
-document.querySelector('.replayBtn').addEventListener('click', () => {
-  ani.play();
-});
-
-document.querySelector('.stopBtn').addEventListener('click', () => {
-  ani.stop();
-});
-
-document.querySelector('.reverseBtn').addEventListener('click', () => {
-  ani.reverse();
-});
-
-
+window.animate = animate;
 /**
  * TODO
- * mutli target
- * multi animation
+ * 动画组
+ * 单一定时器
+ * handler实例化
+ * 多段动画
+ * 速度控制
+ * 循环播放
  * BezierEasing as dependency
- * speed control
  * documentation
- * use animation api if supported
  */
