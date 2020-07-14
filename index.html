@@ -9,16 +9,8 @@
       left: 100px;
       top: 50px;
       width: 1100px;
-      height: 200px;
-      border: 1px solid #eee;
-    }
-    .container.container--2 {
-      top: 350px;
       height: 100px;
-    }
-    .container.container--3 {
-      top: 500px;
-      height: 100px;
+      background: #eee;
     }
     .box {
       position: absolute;
@@ -32,12 +24,9 @@
       line-height: 100px;
       text-align: center;
     }
-    .box:nth-child(2) {
-      top: 100px;
-    }
     .controls {
       position: absolute;
-      top: 200px;
+      top: 100px;
       left: 100px;
       font-size: 14px;
       display: flex;
@@ -45,7 +34,6 @@
   </style>
   <div class="container container--1">
     <div class="box">1</div>
-    <div class="box">2</div>
     <div class="controls">
       <div>
         <div class="value"></div>
@@ -53,16 +41,13 @@
       </div>
       <div>
         <button class="playBtn">play</button>
-        <button class="stopBtn">stop</button>
+        <button class="resetBtn">reset</button>
         <button class="reverseBtn">reverse</button>
+        <button class="speedBtn" data-speed="1">1x</button>
+        <button class="speedBtn" data-speed="2">2x</button>
+        <button class="speedBtn" data-speed="4">4x</button>
       </div>
     </div>
-  </div>
-  <div class="container container--2">
-    <div class="box">3</div>
-  </div>
-  <div class="container container--3">
-    <div class="box">4</div>
   </div>
   <script src="./bezier.js"></script>
   <script src="./ani.js"></script>
@@ -76,41 +61,16 @@
       document.querySelectorAll('.container--1 > .box'),
       {
         left: [0, 1000],
-        backgroundColor: ['ee3366', '99ee33'],
+        backgroundColor: ['ee3366', 'aaaaaa'],
+        rotate: [0, 360],
       },
       {
-        easing: Easings.cubicBezier(0.5, 0, 0.5, 1),
-        duration: 6000,
+        easing: Easings.linear,
+        duration: 10000,
         cb: (ratio, timeRatio) => {
           $value.innerText = ratio.toFixed(2)
           $time.innerText = timeRatio.toFixed(2)
         },
-        animationGroup,
-      },
-    );
-
-    const ani2 = animate(
-      document.querySelectorAll('.container--2 > .box'),
-      {
-        left: [0, 1000],
-        rotate: [0, 360],
-      },
-      {
-        easing: Easings.linear,
-        duration: 6000,
-        animationGroup,
-      },
-    );
-
-    const ani3 = animate(
-      document.querySelectorAll('.container--3 > .box'),
-      {
-        left: [0, 1000],
-        rotate: [0, 360],
-      },
-      {
-        easing: Easings.linear,
-        duration: 4000,
         animationGroup,
       },
     );
@@ -123,8 +83,14 @@
       }
     });
 
-    document.querySelector('.stopBtn').addEventListener('click', () => {
-      animationGroup.reset(1000);
+    document.querySelector('.resetBtn').addEventListener('click', () => {
+      animationGroup.reset(0);
+    });
+
+    document.querySelectorAll('.speedBtn').forEach($el => {
+      $el.addEventListener('click', ({ currentTarget }) => {
+        animationGroup.setSpeed(parseFloat(currentTarget.dataset.speed, 10));
+      });
     });
 
     document.querySelector('.reverseBtn').addEventListener('click', () => {

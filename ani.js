@@ -97,7 +97,7 @@ class HanlderBackGround extends Handler {
 const handlerMap = {
   left: HanlderLeft,
   rotate: HanlderRotate,
-  background: HanlderBackGround,
+  backgroundColor: HanlderBackGround,
 };
 
 class Animation {
@@ -121,14 +121,15 @@ class Animation {
     this.isPlaying = false;
     this.passedTime = 0;
     this.isReversed = false;
+    this.speed = 1;
     if (animationGroup) animationGroup.add(this);
   }
 
   play() {
-    const { duration } = this;
+    stopAnimation(this);
     this.isPlaying = true;
     this.start = +new Date - this.passedTime;
-    stopAnimation(this);
+    this.breakPoint = this.passedTime;
     startAnimation(this);
   }
 
@@ -153,14 +154,21 @@ class Animation {
     if (isPlaying) this.play();
   }
 
+  setSpeed(speed) {
+    const { isPlaying } = this;
+    this.pause();
+    this.speed = speed;
+    if (isPlaying) this.play();
+  }
+
   destroy() {
     // TODO
   }
 
   _step() {
-    const { duration, start } = this;
+    const { duration, start, speed, breakPoint } = this;
     const now = +new Date;
-    const passedTime = Math.min((now - start), duration);
+    const passedTime = Math.min((now - start - breakPoint) * speed + breakPoint, duration);
     const timeRatio = passedTime / duration;
     this._render(timeRatio);
     this.passedTime = Math.min(passedTime, duration);
@@ -206,7 +214,7 @@ class AnimationGroup {
     this.aniList.length = 0;
   }
 }
-['play', 'pause', 'reset', 'reverse'].forEach(method => {
+['play', 'pause', 'reset', 'reverse', 'setSpeed'].forEach(method => {
   AnimationGroup.prototype[method] = function(...params) {
     this.aniList.forEach(x => x[method](...params));
   };
@@ -215,7 +223,6 @@ class AnimationGroup {
 /**
  * TODO
  * 多段动画
- * 速度控制
  * 循环播放
  * BezierEasing as dependency
  * documentation
