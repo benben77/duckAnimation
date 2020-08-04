@@ -43,9 +43,9 @@
         <button class="playBtn">play</button>
         <button class="resetBtn">reset</button>
         <button class="reverseBtn">reverse</button>
+        <button class="speedBtn" data-speed="0.5">.5x</button>
         <button class="speedBtn" data-speed="1">1x</button>
         <button class="speedBtn" data-speed="2">2x</button>
-        <button class="speedBtn" data-speed="4">4x</button>
       </div>
     </div>
   </div>
@@ -72,6 +72,7 @@
           $time.innerText = timeRatio.toFixed(2)
         },
         animationGroup,
+        repeated: true,
       },
     );
 

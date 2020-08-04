@@ -11,3 +11,7 @@ reset
 reverse
 
 AnimationGroup
+
+Speed control
+
+repeated

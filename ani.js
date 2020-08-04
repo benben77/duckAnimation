@@ -101,7 +101,7 @@ const handlerMap = {
 };
 
 class Animation {
-  constructor($elms, obj, { duration, cb, easing = Easings.linear, animationGroup }) {
+  constructor($elms, obj, { duration, cb, easing = Easings.linear, repeated = false, animationGroup }) {
     if ($elms instanceof NodeList || $elms instanceof Array) {
       $elms = slice.call($elms);
     } else {
@@ -122,6 +122,7 @@ class Animation {
     this.passedTime = 0;
     this.isReversed = false;
     this.speed = 1;
+    this.repeated = repeated;
     if (animationGroup) animationGroup.add(this);
   }
 
@@ -162,17 +163,24 @@ class Animation {
   }
 
   destroy() {
-    // TODO
+    this.pause();
+    // Anything else?
   }
 
   _step() {
-    const { duration, start, speed, breakPoint } = this;
+    const { duration, start, speed, breakPoint, repeated } = this;
     const now = +new Date;
-    const passedTime = Math.min((now - start - breakPoint) * speed + breakPoint, duration);
-    const timeRatio = passedTime / duration;
-    this._render(timeRatio);
+    let passedTime;
+    let timeRatio;
+    if (repeated) {
+      passedTime = ((now - start - breakPoint) * speed + breakPoint) % duration;
+    } else {
+      passedTime = Math.min((now - start - breakPoint) * speed + breakPoint, duration);
+    }
+    timeRatio = passedTime / duration;
     this.passedTime = Math.min(passedTime, duration);
-    if (this.isPlaying && timeRatio < 1) {
+    this._render(timeRatio);
+    if (repeated || (this.isPlaying && timeRatio < 1)) {
       //
     } else {
       this.isPlaying = false;
@@ -223,7 +231,6 @@ class AnimationGroup {
 /**
  * TODO
  * 多段动画
- * 循环播放
  * BezierEasing as dependency
  * documentation
  */
