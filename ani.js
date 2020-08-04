@@ -108,7 +108,6 @@ class Animation {
       $elms = [$elms];
     }
 
-    
     let totalDuration = 0;
     this.list = list.map(({ easing = Easings.linear, duration, ...obj }) => {
       totalDuration += duration;
@@ -127,6 +126,7 @@ class Animation {
     this.isReversed = false;
     this.speed = 1;
     this.repeated = repeated;
+    this.currentPhase = null;
     if (animationGroup) animationGroup.add(this);
   }
 
@@ -147,6 +147,7 @@ class Animation {
   reset(time = 0, stop = true) {
     this.pause();
     if (this.isReversed) this._reverseData();
+    this.currentPhase = null;
     this._render(time);
     this.passedTime = time;
     if (!stop) this.play();
@@ -200,26 +201,29 @@ class Animation {
     const { isReversed, cb } = this;
     const list = isReversed ? this.list.slice().reverse() : this.list;
     const len = list.length - 1;
+    let index = 0;
     list.forEach(({ easing, duration, handlers }, i) => {
-      /**
-       * TODO:
-       * 性能优化: 不用forEach
-       * 1. 每次只把当前的上一个初始/结束状态调整好
-       * 2. 调用reset把每个阶段的初始/结束状态调整好
-       */
       if (time < 0) {
-        handlers.forEach(handler => handler.render(isReversed ? 1: 0));
-      } else if (time <= duration) {
-        let timeRatio = time > duration ? 1 : (time / duration);
-        if (isReversed) timeRatio = 1 - timeRatio;
-        const ratio = easing(timeRatio);
-        handlers.forEach(handler => handler.render(ratio));
-        cb && cb(ratio, timeRatio, isReversed ? len - i : i);
-      } else {
-        handlers.forEach(handler => handler.render(isReversed ? 0: 1));
+        index = i - 1;
+        return;
       }
+      let timeRatio = time > duration ? 1 : (time / duration);
+      if (isReversed) timeRatio = 1 - timeRatio;
+      const ratio = easing(timeRatio);
+      handlers.forEach(handler => handler.render(ratio));
+      cb && cb(ratio, timeRatio, isReversed ? len - i : i);
       time -= duration;
     });
+    if (this.currentPhase !== index) { // 调整各个阶段的初始/结束状态
+      list.forEach(({ handlers }, i) => {
+        if (i > index) {
+          handlers.forEach(handler => handler.render(isReversed ? 1: 0));
+        } else if (i > index) {
+          handlers.forEach(handler => handler.render(isReversed ? 0: 1));
+        }
+      });
+      this.currentPhase = index;
+    }
   }
 
   _reverseData() {
