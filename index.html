@@ -18,7 +18,7 @@
       top: 0;
       width: 100px;
       height: 100px;
-      background: #ee3366;
+      background: #aaaaaa;
       color: #fff;
       font-size: 20px;
       line-height: 100px;
@@ -33,7 +33,7 @@
     }
   </style>
   <div class="container container--1">
-    <div class="box">1</div>
+    <div class="box">0</div>
     <div class="controls">
       <div>
         <div class="value"></div>
@@ -56,20 +56,33 @@
     const $time = document.querySelector('.time');
 
     const animationGroup = new AnimationGroup();
+    let lastIndex = 0;
 
     const ani = animate(
       document.querySelectorAll('.container--1 > .box'),
+      [
+        {
+          left: [0, 1000],
+          // backgroundColor: ['aaaaaa', 'ee3366'],
+          // easing: Easings.linear,
+          duration: 5000,
+        },
+        {
+          // left: [1000, 1000],
+          rotate: [0, 360],
+          duration: 5000,
+        }
+      ],
       {
-        left: [0, 1000],
-        backgroundColor: ['ee3366', 'aaaaaa'],
-        rotate: [0, 360],
-      },
-      {
-        easing: Easings.linear,
-        duration: 10000,
-        cb: (ratio, timeRatio) => {
-          $value.innerText = ratio.toFixed(2)
-          $time.innerText = timeRatio.toFixed(2)
+        cb: (ratio, timeRatio, i) => {
+          $value.innerText = ratio.toFixed(2);
+          $time.innerText = timeRatio.toFixed(2);
+          if (lastIndex !== i) {
+            lastIndex = i;
+            const $elm = document.querySelector('.container--1 > .box');
+            $elm.innerHTML = i;
+            if (i === 1) $elm.style.left = '1000px'; // TODO: fix
+          }
         },
         animationGroup,
         repeated: true,
@@ -85,7 +98,7 @@
     });
 
     document.querySelector('.resetBtn').addEventListener('click', () => {
-      animationGroup.reset(0);
+      animationGroup.reset(6000);
     });
 
     document.querySelectorAll('.speedBtn').forEach($el => {

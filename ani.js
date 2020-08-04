@@ -101,23 +101,27 @@ const handlerMap = {
 };
 
 class Animation {
-  constructor($elms, obj, { duration, cb, easing = Easings.linear, repeated = false, animationGroup }) {
+  constructor($elms, list, { cb, repeated = false, animationGroup }) {
     if ($elms instanceof NodeList || $elms instanceof Array) {
       $elms = slice.call($elms);
     } else {
       $elms = [$elms];
     }
 
-    this.handlers = Object.keys(obj).reduce((handlers, key) => {
-      const handlerCls = handlerMap[key];
-      if (handlerCls) {
-        handlers.push(new handlerCls($elms, obj[key]));
-      }
-      return handlers;
-    }, []);
-    this.duration = duration;
+    
+    let totalDuration = 0;
+    this.list = list.map(({ easing = Easings.linear, duration, ...obj }) => {
+      totalDuration += duration;
+      const handlers = Object.keys(obj).reduce((handlers, key) => {
+        const handlerCls = handlerMap[key];
+        if (handlerCls) handlers.push(new handlerCls($elms, obj[key]));
+        return handlers;
+      }, []);
+      return { easing, duration, handlers };
+    });
+    this.totalDuration = totalDuration;
+
     this.cb = cb;
-    this.easing = easing;
     this.isPlaying = false;
     this.passedTime = 0;
     this.isReversed = false;
@@ -143,7 +147,7 @@ class Animation {
   reset(time = 0, stop = true) {
     this.pause();
     if (this.isReversed) this._reverseData();
-    this._render(time / this.duration);
+    this._render(time);
     this.passedTime = time;
     if (!stop) this.play();
   }
@@ -162,25 +166,29 @@ class Animation {
     if (isPlaying) this.play();
   }
 
-  destroy() {
+  destroy(removeElms) {
     this.pause();
-    // Anything else?
+    if (this.animationGroup) this.animationGroup.remove(this);
+    if (removeElms) {
+      this.$elms.forEach($elm => {
+        $elm.remove(); // $elm.parentNode.removeChild($elm);
+      });
+    }
+    this.$elms.length = 0;
   }
 
   _step() {
-    const { duration, start, speed, breakPoint, repeated } = this;
+    const { totalDuration, start, speed, breakPoint, repeated } = this;
     const now = +new Date;
     let passedTime;
-    let timeRatio;
     if (repeated) {
-      passedTime = ((now - start - breakPoint) * speed + breakPoint) % duration;
+      passedTime = ((now - start - breakPoint) * speed + breakPoint) % totalDuration;
     } else {
-      passedTime = Math.min((now - start - breakPoint) * speed + breakPoint, duration);
+      passedTime = Math.min((now - start - breakPoint) * speed + breakPoint, totalDuration);
     }
-    timeRatio = passedTime / duration;
-    this.passedTime = Math.min(passedTime, duration);
-    this._render(timeRatio);
-    if (repeated || (this.isPlaying && timeRatio < 1)) {
+    this.passedTime = Math.min(passedTime, totalDuration);
+    this._render(passedTime);
+    if (repeated || (this.isPlaying && passedTime < totalDuration)) {
       //
     } else {
       this.isPlaying = false;
@@ -188,18 +196,27 @@ class Animation {
     }
   }
 
-  _render(timeRatio) {
-    const { cb, easing, isReversed } = this;
-    if (isReversed) timeRatio = 1 - timeRatio;
-    const ratio = easing(timeRatio);
-    this.handlers.forEach(handler => {
-      handler.render(ratio);
+  _render(time) {
+    const { isReversed, cb } = this;
+    const list = isReversed ? this.list.slice().reverse() : this.list;
+    const len = list.length - 1;
+    list.some(({ easing, duration, handlers }, i) => {
+      if (time < 0) return true;
+      if (time <= duration) {
+        let timeRatio = time > duration ? 1 : (time / duration);
+        if (isReversed) timeRatio = 1 - timeRatio;
+        const ratio = easing(timeRatio);
+        handlers.forEach(handler => {
+          handler.render(ratio);
+        });
+        cb && cb(ratio, timeRatio, isReversed ? len - i : i);
+      }
+      time -= duration;
     });
-    cb && cb(ratio, timeRatio);
   }
 
   _reverseData() {
-    this.passedTime = this.duration - this.passedTime;
+    this.passedTime = this.totalDuration - this.passedTime;
     this.isReversed = !this.isReversed;
   }
 }
@@ -215,10 +232,19 @@ class AnimationGroup {
     this.aniList = [];
   }
   add(animation) {
+    if (animation.animationGroup) throw new Error('animation can only be added to one group'); // animation.animationGroup.remove(animation);
     this.aniList.push(animation);
+    animation.animationGroup = this;
   }
-  destroy() {
-    this.aniList.forEach(x => x.destroy());
+  remove(animation) {
+    const index = this.aniList.indexOf(animation);
+    if (index !== -1) this.aniList.splice(index, 1);
+  }
+  destroy(removeElms = false) {
+    this.aniList.forEach(x => {
+      x.animationGroup = null;
+      x.destroy(removeElms);
+    });
     this.aniList.length = 0;
   }
 }
@@ -230,7 +256,7 @@ class AnimationGroup {
 
 /**
  * TODO
- * 多段动画
+ * 修复倒放时的bug
  * BezierEasing as dependency
  * documentation
  */
