@@ -200,16 +200,23 @@ class Animation {
     const { isReversed, cb } = this;
     const list = isReversed ? this.list.slice().reverse() : this.list;
     const len = list.length - 1;
-    list.some(({ easing, duration, handlers }, i) => {
-      if (time < 0) return true;
-      if (time <= duration) {
+    list.forEach(({ easing, duration, handlers }, i) => {
+      /**
+       * TODO:
+       * 性能优化: 不用forEach
+       * 1. 每次只把当前的上一个初始/结束状态调整好
+       * 2. 调用reset把每个阶段的初始/结束状态调整好
+       */
+      if (time < 0) {
+        handlers.forEach(handler => handler.render(isReversed ? 1: 0));
+      } else if (time <= duration) {
         let timeRatio = time > duration ? 1 : (time / duration);
         if (isReversed) timeRatio = 1 - timeRatio;
         const ratio = easing(timeRatio);
-        handlers.forEach(handler => {
-          handler.render(ratio);
-        });
+        handlers.forEach(handler => handler.render(ratio));
         cb && cb(ratio, timeRatio, isReversed ? len - i : i);
+      } else {
+        handlers.forEach(handler => handler.render(isReversed ? 0: 1));
       }
       time -= duration;
     });
@@ -256,7 +263,6 @@ class AnimationGroup {
 
 /**
  * TODO
- * 修复倒放时的bug
  * BezierEasing as dependency
  * documentation
  */

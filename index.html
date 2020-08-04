@@ -63,14 +63,16 @@
       [
         {
           left: [0, 1000],
-          // backgroundColor: ['aaaaaa', 'ee3366'],
           // easing: Easings.linear,
-          duration: 5000,
+          duration: 3000,
         },
         {
-          // left: [1000, 1000],
           rotate: [0, 360],
-          duration: 5000,
+          duration: 3000,
+        },
+        {
+          backgroundColor: ['aaaaaa', 'ee3366'],
+          duration: 3000,
         }
       ],
       {
@@ -81,7 +83,6 @@
             lastIndex = i;
             const $elm = document.querySelector('.container--1 > .box');
             $elm.innerHTML = i;
-            if (i === 1) $elm.style.left = '1000px'; // TODO: fix
           }
         },
         animationGroup,
