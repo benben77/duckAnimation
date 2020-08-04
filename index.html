@@ -50,10 +50,12 @@
     </div>
   </div>
   <script src="./bezier.js"></script>
-  <script src="./ani.js"></script>
+  <script src="./dist/main.js"></script>
   <script>
     const $value = document.querySelector('.value');
     const $time = document.querySelector('.time');
+
+    const { animate, AnimationGroup } = duckAnimation;
 
     const animationGroup = new AnimationGroup();
     let lastIndex = 0;

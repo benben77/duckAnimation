@@ -203,10 +203,8 @@ class Animation {
     const len = list.length - 1;
     let index = 0;
     list.forEach(({ easing, duration, handlers }, i) => {
-      if (time < 0) {
-        index = i - 1;
-        return;
-      }
+      if (time < 0) return;
+      index = i;
       let timeRatio = time > duration ? 1 : (time / duration);
       if (isReversed) timeRatio = 1 - timeRatio;
       const ratio = easing(timeRatio);
@@ -264,6 +262,11 @@ class AnimationGroup {
     this.aniList.forEach(x => x[method](...params));
   };
 });
+
+export {
+  animate,
+  AnimationGroup,
+};
 
 /**
  * TODO

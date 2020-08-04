@@ -1,0 +1,28 @@
+{
+  "name": "duckanimation",
+  "version": "1.0.0",
+  "description": "Easing & Cubic Bezier",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "demo": "npx http-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benben77/duckAnimation.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/benben77/duckAnimation/issues"
+  },
+  "homepage": "https://github.com/benben77/duckAnimation#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.11.0",
+    "@babel/preset-env": "^7.11.0",
+    "@rollup/plugin-babel": "^5.1.0",
+    "rollup": "^2.23.0",
+    "rollup-plugin-uglify": "^6.0.4"
+  }
+}
