@@ -15,3 +15,8 @@ AnimationGroup
 Speed control
 
 repeated
+
+## TODO
+
+- BezierEasing as dependency
+- documentation

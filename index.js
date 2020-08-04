@@ -267,9 +267,3 @@ export {
   animate,
   AnimationGroup,
 };
-
-/**
- * TODO
- * BezierEasing as dependency
- * documentation
- */
