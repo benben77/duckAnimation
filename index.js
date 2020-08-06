@@ -1,5 +1,4 @@
 const { slice } = [];
-const { BezierEasing } = window;
 
 let animationId = 0;
 let animationList = new Set();
@@ -44,12 +43,6 @@ const Easings = {
     } else {
       return n1 * (x -= 2.625 / d1) * x + 0.984375;
     }
-  },
-  cubicBezier(x1, y1, x2, y2) {
-    const easing = BezierEasing(x1, y1, x2, y2);
-    return function(x) {
-      return easing(x);
-    };
   },
 };
 
